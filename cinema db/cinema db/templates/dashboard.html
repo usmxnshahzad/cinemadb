@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &mdash; CinemaDB{% endblock %}
+{% block content %}
+
+<div class="dash-top">
+  <div class="dash-greeting">Welcome back, <span class="red">{{ user.username }}</span></div>
+  <p style="color:var(--muted);margin-top:.3rem;">Your personalised movie hub</p>
+  <div class="dash-stats">
+    <div class="stat-tile"><div class="stat-num">{{ fav_movies|length }}</div><div class="stat-lbl">Favourites</div></div>
+    <div class="stat-tile"><div class="stat-num">{{ wl_movies|length }}</div><div class="stat-lbl">Watchlist</div></div>
+    <div class="stat-tile"><div class="stat-num">{{ hist_movies|length }}</div><div class="stat-lbl">Watched</div></div>
+    <div class="stat-tile"><div class="stat-num">{{ rated_movies|length }}</div><div class="stat-lbl">Rated</div></div>
+  </div>
+</div>
+
+<!-- AI PICKS -->
+{% if recs %}
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title"><span class="accent">AI</span> Picks for You</h2>
+    <a href="{{ url_for('recommend') }}" class="section-cta">Full list</a>
+  </div>
+  <div class="movie-row">
+    {% for m in recs %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- FAVOURITES -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title">Your <span class="accent">Favourites</span></h2>
+  </div>
+  {% if fav_movies %}
+  <div class="movie-row">
+    {% for m in fav_movies %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted);padding:.5rem 0;">No favourites yet. Browse movies and click the heart icon.</p>
+  {% endif %}
+</section>
+
+<!-- WATCHLIST -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title">Your <span class="gold">Watchlist</span></h2>
+  </div>
+  {% if wl_movies %}
+  <div class="movie-row">
+    {% for m in wl_movies %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted);padding:.5rem 0;">Your watchlist is empty. Add movies to watch later.</p>
+  {% endif %}
+</section>
+
+<!-- RECENTLY WATCHED -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title">Recently <span class="accent">Watched</span></h2>
+  </div>
+  {% if hist_movies %}
+  <div class="movie-row">
+    {% for m in hist_movies %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted);padding:.5rem 0;">Movies you visit will appear here.</p>
+  {% endif %}
+</section>
+
+<!-- RATED -->
+{% if rated_movies %}
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title">Your <span class="gold">Ratings</span></h2>
+  </div>
+  <div class="movie-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
+    {% for m in rated_movies %}
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;gap:1rem;padding:.8rem;align-items:flex-start;">
+      <img src="{{ m.poster }}" style="width:60px;border-radius:6px;flex-shrink:0;" onerror="this.src='/static/images/placeholder.svg'">
+      <div>
+        <a href="{{ url_for('movie_detail', mid=m.id) }}" style="font-weight:700;font-size:.9rem;">{{ m.title }}</a>
+        <div style="color:var(--gold);font-size:.85rem;margin:.2rem 0;">&#9733; {{ m.user_score }}/10</div>
+        {% if m.user_review %}<p style="font-size:.78rem;color:var(--muted);line-height:1.5;">"{{ m.user_review[:80] }}{% if m.user_review|length > 80 %}&#8230;{% endif %}"</p>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

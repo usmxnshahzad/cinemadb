@@ -1,0 +1,23 @@
+<div class="movie-card" onclick="window.location='{{ url_for('movie_detail', mid=m.id) }}'">
+  <img class="movie-card-img" src="{{ m.poster }}" alt="{{ m.title }}" loading="lazy"
+       onerror="this.src='/static/images/placeholder.svg'">
+  <div class="movie-card-overlay">
+    <div class="ov-row">
+      <a href="{{ url_for('movie_detail', mid=m.id) }}" class="ov-btn" title="View details" onclick="event.stopPropagation()">&#9654;</a>
+      <button class="ov-btn {% if m.id in favs %}fav-on{% endif %}" data-fav="{{ m.id }}" title="Toggle favourite" type="button" onclick="event.stopPropagation()">
+        {% if m.id in favs %}&#9829;{% else %}&#9825;{% endif %}
+      </button>
+      <button class="ov-btn {% if m.id in wl %}wl-on{% endif %}" data-wl="{{ m.id }}" title="Watchlist" type="button" onclick="event.stopPropagation()">
+        {% if m.id in wl %}&#9646;{% else %}&#43;{% endif %}
+      </button>
+    </div>
+  </div>
+  <div class="movie-card-body">
+    <div class="mc-title">{{ m.title }}</div>
+    <div class="mc-row">
+      <span class="mc-rating">&#9733; {{ m.rating }}</span>
+      <span>{{ m.get('year', '') }}</span>
+    </div>
+    <div class="mc-genre">{{ m.genre.replace('|', ' &middot; ') }}</div>
+  </div>
+</div>
