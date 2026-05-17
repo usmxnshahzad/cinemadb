@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel &mdash; CinemaDB{% endblock %}
+
+{% block head %}
+<style>
+.admin-wrap {
+  display: grid; grid-template-columns: 230px 1fr;
+  min-height: calc(100vh - var(--nav-h));
+  padding-top: var(--nav-h);
+}
+.admin-side {
+  background: var(--bg2); border-right: 1px solid var(--border);
+  padding: 1.8rem 0;
+  position: sticky; top: var(--nav-h);
+  height: calc(100vh - var(--nav-h)); overflow-y: auto;
+}
+.side-section { font-size:.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--dim); padding:.8rem 1.3rem .4rem; }
+.side-link {
+  display:flex; align-items:center; gap:.7rem;
+  padding:.6rem 1.3rem; color:var(--muted);
+  font-size:.86rem; font-weight:500;
+  border-left:3px solid transparent;
+  transition:all .18s; cursor:pointer; text-decoration:none;
+}
+.side-link:hover { color:var(--text); background:rgba(255,255,255,.03); }
+.side-link.active { color:var(--accent); border-left-color:var(--accent); background:var(--accent-dim); }
+.side-link .sct { margin-left:auto; background:var(--bg3); border-radius:10px; padding:.1rem .5rem; font-size:.7rem; color:var(--muted); }
+.side-link.active .sct { background:rgba(229,9,20,.2); color:var(--accent); }
+.admin-main { padding:2rem 2.5rem; overflow-x:auto; }
+
+.pg-hd { margin-bottom:1.8rem; }
+.pg-hd h2 { font-family:var(--font-d); font-size:1.8rem; font-weight:900; }
+.pg-hd p  { color:var(--muted); font-size:.88rem; margin-top:.25rem; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:1rem; margin-bottom:2rem; }
+.sbox {
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:12px; padding:1.2rem 1.3rem; cursor:default; transition:border-color .2s;
+}
+.sbox:hover { border-color:var(--accent); }
+.sbox-n { font-family:var(--font-d); font-size:2.4rem; font-weight:900; color:var(--accent); line-height:1; }
+.sbox-l { font-size:.73rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-top:.35rem; }
+
+.tc { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:1.5rem; }
+.tc-hd {
+  padding:.9rem 1.4rem; background:var(--bg3); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+}
+.tc-hd h3 { font-weight:700; font-size:.97rem; }
+.tc-sc { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { padding:.7rem 1.1rem; text-align:left; font-size:.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted); background:var(--bg3); border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:.72rem 1.1rem; font-size:.84rem; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,.02); }
+
+.rbadge { display:inline-block; padding:.2rem .65rem; border-radius:20px; font-size:.72rem; font-weight:700; }
+.radmin { background:rgba(15,184,173,.15); color:var(--teal); }
+.ruser  { background:rgba(255,255,255,.07); color:var(--muted); }
+.gld    { color:var(--gold); font-weight:700; }
+
+.ab { padding:.22rem .65rem; border-radius:5px; font-size:.73rem; font-weight:600; cursor:pointer; transition:all .18s; border:none; }
+.ab-role { background:var(--bg3); border:1px solid var(--border2); color:var(--muted); }
+.ab-role:hover { color:var(--text); border-color:var(--text); }
+.ab-del  { background:rgba(229,9,20,.1); border:1px solid rgba(229,9,20,.3); color:#ff7070; }
+.ab-del:hover { background:rgba(229,9,20,.22); }
+.ab-view { background:rgba(15,184,173,.1); border:1px solid rgba(15,184,173,.3); color:var(--teal); text-decoration:none; display:inline-block; }
+.ab-view:hover { background:rgba(15,184,173,.22); }
+
+.tf { padding:.8rem 1.2rem; border-bottom:1px solid var(--border); background:var(--bg2); display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+.ts { background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:.4rem .85rem; color:var(--text); font-size:.85rem; outline:none; flex:1; min-width:180px; font-family:var(--font-b); transition:border-color .2s; }
+.ts:focus { border-color:var(--accent); }
+.tsel { background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:.4rem .85rem; color:var(--text); font-size:.85rem; outline:none; font-family:var(--font-b); }
+.tc-count { color:var(--dim); font-size:.8rem; margin-left:auto; }
+
+.modal-ov {
+  position:fixed; inset:0; z-index:3000;
+  background:rgba(8,8,16,.93); backdrop-filter:blur(14px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .3s;
+}
+.modal-ov.open { opacity:1; pointer-events:all; }
+.modal-bx {
+  background:var(--bg2); border:1px solid var(--border2);
+  border-radius:16px; padding:2rem; width:100%; max-width:480px;
+  box-shadow:0 30px 80px rgba(0,0,0,.7);
+  transform:translateY(20px); transition:transform .3s;
+  max-height:90vh; overflow-y:auto;
+}
+.modal-ov.open .modal-bx { transform:translateY(0); }
+.modal-ttl { font-family:var(--font-d); font-size:1.4rem; font-weight:900; margin-bottom:1.2rem; }
+.modal-cls { float:right; background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer; }
+
+.fg { margin-bottom:.9rem; }
+.fl { display:block; font-size:.72rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin-bottom:.35rem; }
+.fi, .fta {
+  width:100%; background:var(--bg3); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text); padding:.6rem .85rem;
+  font-size:.87rem; outline:none; transition:border-color .2s; font-family:var(--font-b);
+}
+.fi:focus, .fta:focus { border-color:var(--accent); }
+.fta { resize:vertical; min-height:75px; }
+.fr2 { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; }
+.f-save { width:100%; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:.75rem; font-size:.93rem; font-weight:700; cursor:pointer; margin-top:.5rem; transition:background .2s; font-family:var(--font-b); }
+.f-save:hover { background:#c40812; }
+
+.cl-item { display:flex; gap:.75rem; padding:.58rem .9rem; border-bottom:1px solid rgba(255,255,255,.04); align-items:flex-start; }
+.cl-item:last-child { border-bottom:none; }
+.cl-role { flex-shrink:0; width:44px; font-size:.7rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding-top:.1rem; }
+.cl-role.user { color:var(--accent); }
+.cl-role.bot  { color:var(--teal); }
+.cl-msg { font-size:.84rem; line-height:1.55; flex:1; }
+.cl-ts  { font-size:.7rem; color:var(--dim); flex-shrink:0; padding-top:.15rem; }
+
+.achip { display:inline-block; background:var(--bg3); border:1px solid var(--border); border-radius:12px; padding:.16rem .55rem; font-size:.72rem; margin:.13rem; color:var(--muted); }
+.achip strong { color:var(--text); }
+
+.bar-wrap { height:6px; background:var(--bg3); border-radius:3px; width:100%; margin-top:.4rem; }
+.bar-fill { height:100%; background:var(--accent); border-radius:3px; transition:width .5s ease; }
+
+@media(max-width:800px){
+  .admin-wrap { grid-template-columns:1fr; }
+  .admin-side { display:none; }
+  .admin-main { padding:1.2rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-side">
+    <div class="side-section">Overview</div>
+    <a class="side-link {% if tab=='overview' %}active{% endif %}" href="{{ url_for('admin', tab='overview') }}">Dashboard <span class="sct">Live</span></a>
+
+    <div class="side-section">Content</div>
+    <a class="side-link {% if tab=='users'   %}active{% endif %}" href="{{ url_for('admin', tab='users') }}">Users <span class="sct">{{ total_users }}</span></a>
+    <a class="side-link {% if tab=='movies'  %}active{% endif %}" href="{{ url_for('admin', tab='movies') }}">Movies <span class="sct">{{ total_movies }}</span></a>
+    <a class="side-link {% if tab=='ratings' %}active{% endif %}" href="{{ url_for('admin', tab='ratings') }}">Ratings &amp; Reviews <span class="sct">{{ total_ratings }}</span></a>
+
+    <div class="side-section">Analytics</div>
+    <a class="side-link {% if tab=='chatlogs' %}active{% endif %}" href="{{ url_for('admin', tab='chatlogs') }}">Chat Logs <span class="sct">{{ total_chats }}</span></a>
+    <a class="side-link {% if tab=='moods'   %}active{% endif %}" href="{{ url_for('admin', tab='moods') }}">Mood Sessions <span class="sct">{{ total_moods }}</span></a>
+
+    <div class="side-section">App</div>
+    <a class="side-link" href="{{ url_for('home') }}">View Site</a>
+    <a class="side-link" href="{{ url_for('logout') }}" style="color:var(--accent);">Logout</a>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    {% if tab == 'overview' %}
+    <div class="pg-hd">
+      <h2>Admin Dashboard</h2>
+      <p>Live platform snapshot &mdash; auto-refreshes every 30 seconds</p>
+    </div>
+    <div class="stat-grid">
+      <div class="sbox" onclick="location='{{ url_for('admin',tab='users') }}'">  <div class="sbox-n" id="sv-users">{{ total_users }}</div>   <div class="sbox-l">Users</div></div>
+      <div class="sbox" onclick="location='{{ url_for('admin',tab='movies') }}'"> <div class="sbox-n" id="sv-movies">{{ total_movies }}</div>  <div class="sbox-l">Films</div></div>
+      <div class="sbox"><div class="sbox-n" id="sv-favs">{{ total_favs }}</div>      <div class="sbox-l">Favourites</div></div>
+      <div class="sbox" onclick="location='{{ url_for('admin',tab='ratings') }}'"><div class="sbox-n" id="sv-ratings">{{ total_ratings }}</div><div class="sbox-l">Ratings</div></div>
+      <div class="sbox"><div class="sbox-n" id="sv-hist">{{ total_hist }}</div>       <div class="sbox-l">Watch Events</div></div>
+      <div class="sbox" onclick="location='{{ url_for('admin',tab='moods') }}'">  <div class="sbox-n" id="sv-moods">{{ total_moods }}</div>   <div class="sbox-l">Mood Sessions</div></div>
+      <div class="sbox" onclick="location='{{ url_for('admin',tab='chatlogs') }}'"><div class="sbox-n" id="sv-chats">{{ total_chats }}</div>  <div class="sbox-l">Chat Messages</div></div>
+    </div>
+
+    <!-- Activity bars -->
+    <div class="tc" style="margin-bottom:1.5rem;">
+      <div class="tc-hd"><h3>Engagement Overview</h3><span style="color:var(--muted);font-size:.8rem;">Relative metrics</span></div>
+      <div style="padding:1.2rem 1.5rem;">
+        {% set mx = [total_hist, 1]|max %}
+        {% for lbl,val in [('Watch History',total_hist),('Favourites',total_favs),('Ratings',total_ratings),('Mood Sessions',total_moods),('Chat Messages',total_chats)] %}
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.3rem;">
+            <span style="color:var(--muted);">{{ lbl }}</span>
+            <span style="font-weight:700;color:var(--accent);">{{ val }}</span>
+          </div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:{{ [[((val / mx) * 100)|int, 100]|min, 2]|max }}%"></div></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="tc">
+      <div class="tc-hd"><h3>Recent Signups</h3><a href="{{ url_for('admin',tab='users') }}" style="font-size:.82rem;color:var(--muted);">All users</a></div>
+      <div class="tc-sc">
+        <table><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead><tbody>
+          {% for u in users[:8] %}
+          <tr>
+            <td style="font-weight:600;">{{ u.username }}</td>
+            <td style="color:var(--muted);">{{ u.email }}</td>
+            <td><span class="rbadge {% if u.role=='admin' %}radmin{% else %}ruser{% endif %}">{{ u.role }}</span></td>
+            <td style="color:var(--dim);">{{ u.created[:10] if u.created else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ USERS ═══ -->
+    {% elif tab == 'users' %}
+    <div class="pg-hd">
+      <h2>User Management</h2>
+      <p>{{ total_users }} registered accounts — toggle admin role or permanently delete users</p>
+    </div>
+    <div class="tc">
+      <div class="tf">
+        <input class="ts" id="u-search" placeholder="Filter by username or email…" oninput="filterTbl('u-tbody',this.value,[1,2])"/>
+        <select class="tsel" onchange="filterRole(this.value)">
+          <option value="">All Roles</option>
+          <option value="admin">Admin only</option>
+          <option value="user">Users only</option>
+        </select>
+        <span class="tc-count" id="u-count">{{ total_users }} users</span>
+      </div>
+      <div class="tc-sc">
+        <table><thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="u-tbody">
+          {% for u in users %}
+          <tr data-role="{{ u.role }}">
+            <td style="color:var(--dim);">{{ u.id }}</td>
+            <td style="font-weight:600;">{{ u.username }}</td>
+            <td style="color:var(--muted);">{{ u.email }}</td>
+            <td><span class="rbadge {% if u.role=='admin' %}radmin{% else %}ruser{% endif %}" id="rb-{{ u.id }}">{{ u.role }}</span></td>
+            <td style="color:var(--dim);">{{ u.created[:10] if u.created else '—' }}</td>
+            <td style="display:flex;gap:.4rem;flex-wrap:wrap;">
+              <button class="ab ab-role" onclick="toggleRole({{ u.id }},this)">Toggle Role</button>
+              {% if u.id != session.user_id %}
+              <button class="ab ab-del" onclick="deleteUser({{ u.id }},this)">Delete</button>
+              {% else %}
+              <span style="font-size:.72rem;color:var(--dim);padding:.22rem .3rem;">(you)</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ MOVIES ═══ -->
+    {% elif tab == 'movies' %}
+    <div class="pg-hd" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div><h2>Movie Catalogue</h2><p>{{ total_movies }} films in the library &mdash; click Add Movie to extend the catalogue</p></div>
+      <button class="ab ab-view" style="padding:.5rem 1.1rem;font-size:.85rem;" onclick="openAdd()">+ Add Movie</button>
+    </div>
+    <div class="tc">
+      <div class="tf">
+        <input class="ts" placeholder="Search title, genre, director…" oninput="filterTbl('m-tbody',this.value,[1,2,4])"/>
+        <select class="tsel" onchange="filterTbl('m-tbody',this.value,[2])">
+          <option value="">All Genres</option>
+          {% for g in genres %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+        </select>
+        <span class="tc-count">{{ total_movies }} films</span>
+      </div>
+      <div class="tc-sc">
+        <table><thead><tr><th>ID</th><th>Title</th><th>Genre</th><th>Rating</th><th>Director</th><th>Year</th><th>Min</th><th></th></tr></thead>
+        <tbody id="m-tbody">
+          {% for m in all_movies %}
+          <tr>
+            <td style="color:var(--dim);">{{ m.id }}</td>
+            <td style="font-weight:600;max-width:190px;">{{ m.title }}</td>
+            <td style="color:var(--muted);font-size:.79rem;">{{ m.genre.replace('|',' / ') }}</td>
+            <td><span class="gld">&#9733; {{ m.rating }}</span></td>
+            <td style="color:var(--muted);font-size:.81rem;">{{ m.get('director','—') }}</td>
+            <td style="color:var(--dim);">{{ m.get('year','—') }}</td>
+            <td style="color:var(--dim);">{{ m.get('runtime','—') }}</td>
+            <td><a href="{{ url_for('movie_detail', mid=m.id) }}" class="ab ab-view" target="_blank">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+
+    <!-- ═══ RATINGS ═══ -->
+    {% elif tab == 'ratings' %}
+    <div class="pg-hd">
+      <h2>Ratings &amp; Reviews</h2>
+      <p>{{ total_ratings }} ratings submitted — admins can remove inappropriate content</p>
+    </div>
+    {% if all_ratings %}
+    <div class="tc">
+      <div class="tf">
+        <input class="ts" placeholder="Filter by user, movie or review…" oninput="filterTbl('r-tbody',this.value,[1,2,4])"/>
+        <select class="tsel" onchange="filterScore(this.value)">
+          <option value="">All Scores</option>
+          <option value="9">9-10 stars</option>
+          <option value="7">7-8 stars</option>
+          <option value="5">5-6 stars</option>
+          <option value="low">Below 5</option>
+        </select>
+        <span class="tc-count">{{ all_ratings|length }} shown</span>
+      </div>
+      <div class="tc-sc">
+        <table><thead><tr><th>ID</th><th>User</th><th>Movie</th><th>Score</th><th>Review</th><th>Date</th><th></th></tr></thead>
+        <tbody id="r-tbody">
+          {% for r in all_ratings %}
+          <tr id="rr-{{ r.id }}" data-score="{{ r.score }}">
+            <td style="color:var(--dim);">{{ r.id }}</td>
+            <td style="font-weight:600;">{{ r.username }}</td>
+            <td><a href="{{ url_for('movie_detail', mid=r.mid) }}" style="color:var(--accent);font-size:.82rem;">{{ r.movie_title }}</a></td>
+            <td><span class="gld">&#9733; {{ r.score }}/10</span></td>
+            <td style="color:var(--muted);font-size:.82rem;max-width:260px;">
+              {% if r.review %}{{ r.review[:90] }}{% if r.review|length > 90 %}&hellip;{% endif %}
+              {% else %}<span style="color:var(--dim);">—</span>{% endif %}
+            </td>
+            <td style="color:var(--dim);font-size:.79rem;">{{ r.posted_at[:10] if r.posted_at else '—' }}</td>
+            <td><button class="ab ab-del" onclick="delRating({{ r.id }},this)">Delete</button></td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:4rem;color:var(--muted);">No ratings submitted yet.</div>
+    {% endif %}
+
+    <!-- ═══ CHAT LOGS ═══ -->
+    {% elif tab == 'chatlogs' %}
+    <div class="pg-hd" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div><h2>CineBot Chat Logs</h2><p>{{ total_chats }} user messages — useful for tuning bot responses</p></div>
+      <button class="ab ab-del" style="padding:.5rem 1.1rem;font-size:.85rem;" onclick="clearLogs()">Clear All Logs</button>
+    </div>
+    {% if chat_logs_data %}
+    <div class="tc">
+      <div class="tf">
+        <input class="ts" placeholder="Search messages…" oninput="filterChat(this.value)"/>
+        <select class="tsel" onchange="filterChatRole(this.value)">
+          <option value="">All</option>
+          <option value="user">User messages</option>
+          <option value="bot">Bot replies</option>
+        </select>
+      </div>
+      <div id="cl-list" style="max-height:580px;overflow-y:auto;">
+        {% for row in chat_logs_data %}
+        <div class="cl-item" data-role="{{ row.role }}" data-msg="{{ row.message|lower }}">
+          <span class="cl-role {{ row.role }}">{{ row.role }}</span>
+          <span class="cl-msg">{{ row.message }}</span>
+          <span class="cl-ts">{{ row.ts[5:16] if row.ts else '' }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:4rem;color:var(--muted);">No chat logs yet. They appear once users interact with CineBot.</div>
+    {% endif %}
+
+    <!-- ═══ MOOD SESSIONS ═══ -->
+    {% elif tab == 'moods' %}
+    <div class="pg-hd">
+      <h2>Mood Finder Sessions</h2>
+      <p>{{ total_moods }} sessions completed — reveals genre preferences and user intent patterns</p>
+    </div>
+    {% if mood_data %}
+    <div class="tc">
+      <div class="tc-sc">
+        <table><thead><tr><th>ID</th><th>User</th><th>Feeling</th><th>Company</th><th>Intensity</th><th>Length</th><th>Top Genres Matched</th><th>Date</th></tr></thead>
+        <tbody>
+          {% for ms in mood_data %}
+          <tr>
+            <td style="color:var(--dim);">{{ ms.id }}</td>
+            <td style="font-weight:600;">{{ ms.username }}</td>
+            <td>{% if ms.answers.current_feeling %}<span class="achip"><strong>{{ ms.answers.current_feeling }}</strong></span>{% else %}—{% endif %}</td>
+            <td>{% if ms.answers.company %}<span class="achip">{{ ms.answers.company }}</span>{% else %}—{% endif %}</td>
+            <td>{% if ms.answers.intensity %}<span class="achip">{{ ms.answers.intensity }}</span>{% else %}—{% endif %}</td>
+            <td>{% if ms.answers.length_pref %}<span class="achip">{{ ms.answers.length_pref }}</span>{% else %}—{% endif %}</td>
+            <td style="color:var(--teal);font-size:.82rem;font-weight:600;">{{ ms.top_genres }}</td>
+            <td style="color:var(--dim);font-size:.79rem;">{{ ms.created_at[:10] if ms.created_at else '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:4rem;color:var(--muted);">No mood sessions recorded yet.</div>
+    {% endif %}
+    {% endif %}
+
+  </main>
+</div>
+
+<!-- ADD MOVIE MODAL -->
+<div class="modal-ov" id="add-modal">
+  <div class="modal-bx">
+    <button class="modal-cls" onclick="closeAdd()">&#10005;</button>
+    <div class="modal-ttl">Add Movie to Library</div>
+    <p style="color:var(--muted);font-size:.83rem;margin-bottom:1.2rem;">Fields marked * are required. Movie is added to the in-memory catalogue for this session.</p>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Title *</label><input class="fi" id="nm-title" placeholder="e.g. Parasite"/></div>
+      <div class="fg"><label class="fl">Year</label><input class="fi" id="nm-year" type="number" placeholder="2024" min="1900" max="2030"/></div>
+    </div>
+    <div class="fg"><label class="fl">Genre (pipe-separated) *</label><input class="fi" id="nm-genre" placeholder="Drama|Thriller|Crime"/></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">IMDb Rating</label><input class="fi" id="nm-rating" type="number" step="0.1" min="1" max="10" placeholder="8.5"/></div>
+      <div class="fg"><label class="fl">Runtime (min)</label><input class="fi" id="nm-runtime" type="number" placeholder="120"/></div>
+    </div>
+    <div class="fg"><label class="fl">Director</label><input class="fi" id="nm-director" placeholder="e.g. Christopher Nolan"/></div>
+    <div class="fg"><label class="fl">Cast (pipe-separated)</label><input class="fi" id="nm-cast" placeholder="Actor One|Actor Two"/></div>
+    <div class="fg"><label class="fl">Description *</label><textarea class="fta" id="nm-desc" placeholder="Brief synopsis…"></textarea></div>
+    <div class="fg"><label class="fl">Poster URL</label><input class="fi" id="nm-poster" placeholder="https://image.tmdb.org/t/p/w500/…"/></div>
+    <div class="fg"><label class="fl">YouTube Trailer ID</label><input class="fi" id="nm-trailer" placeholder="e.g. dQw4w9WgXcQ"/></div>
+    <button class="f-save" onclick="submitAdd()">Add to Library</button>
+    <div id="add-msg" style="margin-top:.7rem;font-size:.85rem;text-align:center;min-height:1.2rem;"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── Table filter ───────────────────────────────────
+function filterTbl(tbodyId, q, cols) {
+  q = q.toLowerCase().trim();
+  document.querySelectorAll(`#${tbodyId} tr`).forEach(row => {
+    const txt = cols.map(i => row.cells[i]?.textContent.toLowerCase() || '').join(' ');
+    row.style.display = (!q || txt.includes(q)) ? '' : 'none';
+  });
+}
+function filterRole(role) {
+  document.querySelectorAll('#u-tbody tr').forEach(r => {
+    r.style.display = (!role || r.dataset.role === role) ? '' : 'none';
+  });
+}
+function filterScore(v) {
+  document.querySelectorAll('#r-tbody tr').forEach(r => {
+    const s = parseInt(r.dataset.score || 0);
+    const show = !v || (v==='9'?s>=9 : v==='7'?s>=7&&s<=8 : v==='5'?s>=5&&s<=6 : s<5);
+    r.style.display = show ? '' : 'none';
+  });
+}
+function filterChat(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#cl-list .cl-item').forEach(i => {
+    i.style.display = (!q || i.dataset.msg.includes(q)) ? '' : 'none';
+  });
+}
+function filterChatRole(role) {
+  document.querySelectorAll('#cl-list .cl-item').forEach(i => {
+    i.style.display = (!role || i.dataset.role === role) ? '' : 'none';
+  });
+}
+
+// ─── User actions ───────────────────────────────────
+async function toggleRole(uid, btn) {
+  btn.disabled = true;
+  const res  = await fetch(`/api/admin/user/${uid}/role`, {method:'POST'});
+  const data = await res.json();
+  btn.disabled = false;
+  if (data.new_role) {
+    const b = document.getElementById(`rb-${uid}`);
+    if (b) { b.textContent = data.new_role; b.className = `rbadge ${data.new_role==='admin'?'radmin':'ruser'}`; }
+    const row = btn.closest('tr');
+    if (row) row.dataset.role = data.new_role;
+    showToast(`Role changed to ${data.new_role}`, 'ok');
+  } else showToast(data.error||'Error', 'err');
+}
+async function deleteUser(uid, btn) {
+  if (!confirm('Permanently delete this user and all their data?')) return;
+  btn.disabled = true;
+  const res  = await fetch(`/api/admin/user/${uid}`, {method:'DELETE'});
+  const data = await res.json();
+  if (data.status === 'deleted') {
+    const row = btn.closest('tr');
+    row.style.transition = 'opacity .35s'; row.style.opacity = '0';
+    setTimeout(() => row.remove(), 370);
+    showToast('User deleted', 'ok');
+    const c = document.getElementById('u-count');
+    if (c) c.textContent = (parseInt(c.textContent)-1) + ' users';
+  } else { btn.disabled = false; showToast(data.error||'Error deleting', 'err'); }
+}
+
+// ─── Rating delete ──────────────────────────────────
+async function delRating(rid, btn) {
+  if (!confirm('Remove this rating?')) return;
+  btn.disabled = true;
+  const res  = await fetch(`/api/admin/rating/${rid}`, {method:'DELETE'});
+  const data = await res.json();
+  if (data.status === 'deleted') {
+    const row = document.getElementById(`rr-${rid}`);
+    row.style.opacity='0'; row.style.transition='.3s';
+    setTimeout(()=>row.remove(), 310);
+    showToast('Rating removed', 'ok');
+  } else { btn.disabled=false; showToast('Error', 'err'); }
+}
+
+// ─── Clear chat logs ─────────────────────────────────
+async function clearLogs() {
+  if (!confirm('Clear ALL chat logs permanently?')) return;
+  const res  = await fetch('/api/admin/chatlogs/clear', {method:'POST'});
+  const data = await res.json();
+  if (data.status==='cleared') {
+    const el = document.getElementById('cl-list');
+    if (el) el.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--muted);">Chat logs cleared.</div>';
+    showToast('Chat logs cleared', 'ok');
+  }
+}
+
+// ─── Add Movie modal ──────────────────────────────────
+function openAdd()  { document.getElementById('add-modal').classList.add('open'); }
+function closeAdd() { document.getElementById('add-modal').classList.remove('open'); }
+document.getElementById('add-modal')?.addEventListener('click', e => { if(e.target===document.getElementById('add-modal')) closeAdd(); });
+async function submitAdd() {
+  const title = document.getElementById('nm-title').value.trim();
+  const genre = document.getElementById('nm-genre').value.trim();
+  const desc  = document.getElementById('nm-desc').value.trim();
+  const msg   = document.getElementById('add-msg');
+  if (!title||!genre||!desc) { msg.innerHTML='<span style="color:#ff7070">Title, Genre and Description are required.</span>'; return; }
+  const payload = {
+    title, genre, description: desc,
+    year:     parseInt(document.getElementById('nm-year').value)||null,
+    rating:   parseFloat(document.getElementById('nm-rating').value)||7.0,
+    runtime:  parseInt(document.getElementById('nm-runtime').value)||120,
+    director: document.getElementById('nm-director').value.trim()||null,
+    cast:     document.getElementById('nm-cast').value.trim()||null,
+    poster:   document.getElementById('nm-poster').value.trim()||'/static/images/placeholder.svg',
+    trailer:  document.getElementById('nm-trailer').value.trim()||null,
+  };
+  const res  = await fetch('/api/admin/movie/add', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const data = await res.json();
+  if (data.status==='added') {
+    msg.innerHTML='<span style="color:var(--teal)">Movie added! Reload Movies tab to see it.</span>';
+    showToast(`"${title}" added`, 'ok');
+  } else msg.innerHTML=`<span style="color:#ff7070">${data.error||'Error adding movie'}</span>`;
+}
+
+// ─── Live stats refresh ───────────────────────────────
+{% if tab == 'overview' %}
+async function refreshStats() {
+  try {
+    const res  = await fetch('/api/admin/stats');
+    const d    = await res.json();
+    const map  = {'sv-users':d.users,'sv-movies':d.movies,'sv-favs':d.favs,'sv-ratings':d.ratings,'sv-hist':d.history,'sv-moods':d.moods,'sv-chats':d.chats};
+    for(const[id,v] of Object.entries(map)){const el=document.getElementById(id);if(el&&el.textContent!=v)el.textContent=v;}
+  } catch {}
+}
+setInterval(refreshStats, 30000);
+{% endif %}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeAdd(); });
+</script>
+{% endblock %}

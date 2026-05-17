@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}{{ movie.title }} &mdash; CinemaDB{% endblock %}
+{% block content %}
+
+<section class="detail-hero">
+  <div class="hero-bg" style="background-image:url('{{ movie.poster }}');filter:brightness(.28) blur(3px)"></div>
+  <div class="hero-vignette" style="background:linear-gradient(to right,rgba(8,8,16,.98) 0%,rgba(8,8,16,.6) 50%,transparent 80%),linear-gradient(to top,var(--bg) 0%,transparent 55%)"></div>
+  <div class="detail-layout">
+    <div>
+      <img class="detail-poster" src="{{ movie.poster }}" alt="{{ movie.title }}"
+           onerror="this.src='/static/images/placeholder.svg'"/>
+    </div>
+    <div class="detail-info">
+      <h1 class="detail-title">{{ movie.title }}</h1>
+      <div class="detail-meta">
+        <span class="tag tag-red">&#9733; {{ movie.rating }}/10</span>
+        <span class="tag">{{ movie.year }}</span>
+        <span class="tag">{{ movie.runtime }} min</span>
+        {% for g in movie.genre.split('|') %}<span class="tag">{{ g }}</span>{% endfor %}
+      </div>
+      {% if movie.director %}
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem;">Directed by <strong style="color:var(--text)">{{ movie.director }}</strong></p>
+      {% endif %}
+      <p class="detail-desc">{{ movie.description }}</p>
+      <div class="detail-btns">
+        {% if movie.trailer %}
+        <a href="#trailer" class="btn-action btn-red">&#9654; Watch Trailer</a>
+        {% endif %}
+        {% if session.user_id %}
+        <button class="btn-action btn-glass {% if is_fav %}fav-on-btn{% endif %}" id="fav-main" data-fav="{{ movie.id }}" type="button">
+          <span id="fav-icon">{% if is_fav %}&#9829;{% else %}&#9825;{% endif %}</span>
+          <span id="fav-txt">{% if is_fav %}Favourited{% else %}Favourite{% endif %}</span>
+        </button>
+        <button class="btn-action btn-glass {% if is_wl %}wl-on-btn{% endif %}" id="wl-main" data-wl="{{ movie.id }}" type="button">
+          <span id="wl-icon">{% if is_wl %}&#9646;{% else %}&#43;{% endif %}</span>
+          <span id="wl-txt">{% if is_wl %}In Watchlist{% else %}Watchlist{% endif %}</span>
+        </button>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn-action btn-glass">&#9825; Login to Favourite</a>
+        {% endif %}
+      </div>
+
+      {% if cast_list %}
+      <div style="margin-top:1.5rem;">
+        <p style="font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem;">Cast</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;">
+          {% for c in cast_list %}
+          <span style="background:rgba(255,255,255,.07);border:1px solid var(--border);padding:.25rem .7rem;border-radius:14px;font-size:.78rem;">{{ c }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- RATING -->
+{% if session.user_id %}
+<section class="section" style="padding-top:1.5rem;padding-bottom:1rem;">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:1.5rem;max-width:540px;">
+    <h3 style="font-weight:700;margin-bottom:1rem;font-size:1rem;">Rate this Film</h3>
+    <div class="stars" id="star-row" data-movie="{{ movie.id }}" data-current="{{ user_score or 0 }}">
+      {% for i in range(1,11) %}
+      <button class="star-btn {% if user_score and i <= user_score %}on{% endif %}" data-star="{{ i }}" type="button">&#9733;</button>
+      {% endfor %}
+    </div>
+    <div style="margin-top:1rem;">
+      <textarea id="review-input" placeholder="Write a short review (optional)…" rows="3"
+                style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:.7rem .9rem;font-family:var(--font-b);font-size:.88rem;resize:vertical;outline:none;transition:border-color .2s;">{{ user_review or '' }}</textarea>
+    </div>
+    <button id="submit-rating" class="btn-action btn-red" style="margin-top:.75rem;" type="button">Submit Rating</button>
+  </div>
+</section>
+{% endif %}
+
+<!-- TRAILER -->
+{% if movie.trailer %}
+<section class="section" id="trailer" style="padding-top:1rem;">
+  <h2 style="font-family:var(--font-d);font-size:1.5rem;font-weight:700;margin-bottom:1rem;">Trailer</h2>
+  <div class="trailer-wrap">
+    <iframe src="https://www.youtube.com/embed/{{ movie.trailer }}?rel=0" title="{{ movie.title }} Trailer"
+            frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
+            allowfullscreen loading="lazy"></iframe>
+  </div>
+</section>
+{% endif %}
+
+<!-- REVIEWS -->
+{% if reviews %}
+<section class="section" style="padding-top:1rem;">
+  <h2 style="font-family:var(--font-d);font-size:1.4rem;font-weight:700;margin-bottom:1.2rem;">Audience Reviews</h2>
+  <div style="display:flex;flex-direction:column;gap:.85rem;max-width:640px;">
+    {% for r in reviews %}
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;">{{ r.username[0].upper() }}</div>
+        <span style="font-weight:600;font-size:.88rem;">{{ r.username }}</span>
+        <span style="color:var(--gold);font-size:.82rem;">&#9733; {{ r.score }}/10</span>
+        <span style="color:var(--dim);font-size:.75rem;margin-left:auto;">{{ r.posted_at[:10] }}</span>
+      </div>
+      <p style="color:var(--muted);font-size:.85rem;line-height:1.6;">{{ r.review }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- SIMILAR -->
+{% if similar %}
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title"><span class="accent">Similar</span> Films</h2>
+  </div>
+  <div class="movie-row">
+    {% set wl = wl %}
+    {% for m in similar %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  // Stars
+  const row = document.getElementById('star-row');
+  if (!row) return;
+  const btns = row.querySelectorAll('.star-btn');
+  let cur = parseInt(row.dataset.current || 0);
+  function paint(n){ btns.forEach(b => b.classList.toggle('on', parseInt(b.dataset.star) <= n)); }
+  paint(cur);
+  btns.forEach(b => {
+    b.addEventListener('mouseenter', () => paint(parseInt(b.dataset.star)));
+    b.addEventListener('mouseleave', () => paint(cur));
+    b.addEventListener('click', () => { cur = parseInt(b.dataset.star); paint(cur); });
+  });
+  document.getElementById('submit-rating')?.addEventListener('click', async () => {
+    if (!cur) { showToast('Please select a star rating', 'err'); return; }
+    const review = document.getElementById('review-input')?.value.trim() || '';
+    const res = await fetch('/api/rate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ movie_id: {{ movie.id }}, score: cur, review })
+    });
+    if (res.status === 401) { showToast('Please log in to rate', 'err'); return; }
+    showToast('Rating saved — thank you!', 'ok');
+  });
+
+  // Fav button label sync
+  const favMain = document.getElementById('fav-main');
+  if (favMain) {
+    favMain.addEventListener('click', () => {
+      setTimeout(() => {
+        const on = favMain.classList.contains('fav-on') || document.querySelector('[data-fav="{{ movie.id }}"].fav-on');
+        document.getElementById('fav-icon').textContent = on ? '\u2665' : '\u2661';
+        document.getElementById('fav-txt').textContent  = on ? 'Favourited' : 'Favourite';
+      }, 250);
+    });
+  }
+  const wlMain = document.getElementById('wl-main');
+  if (wlMain) {
+    wlMain.addEventListener('click', () => {
+      setTimeout(() => {
+        const on = wlMain.classList.contains('wl-on');
+        document.getElementById('wl-icon').textContent = on ? '\u25a6' : '+';
+        document.getElementById('wl-txt').textContent  = on ? 'In Watchlist' : 'Watchlist';
+      }, 250);
+    });
+  }
+})();
+</script>
+{% endblock %}

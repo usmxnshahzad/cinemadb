@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{% block title %}IMSR-DB{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23e50914'/><text x='50%' y='68%' text-anchor='middle' font-size='56' fill='white' font-family='serif' font-weight='bold'>C</text></svg>"/>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <a href="{{ url_for('home') }}" class="nav-logo">Cinema<span>DB</span></a>
+
+  <div class="nav-links">
+    <a href="{{ url_for('home') }}"      class="{% if request.endpoint=='home'      %}active{% endif %}">Home</a>
+    <a href="{{ url_for('search') }}"    class="{% if request.endpoint=='search'    %}active{% endif %}">Browse</a>
+    <a href="{{ url_for('recommend') }}" class="{% if request.endpoint=='recommend' %}active{% endif %}">For You</a>
+    {% if session.user_id %}
+    <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint=='dashboard' %}active{% endif %}">Dashboard</a>
+    {% endif %}
+    {% if session.role == 'admin' %}
+    <a href="{{ url_for('admin') }}"     class="{% if request.endpoint=='admin'     %}active{% endif %}">Admin</a>
+    {% endif %}
+
+    <!-- MOOD FINDER — primary CTA in nav -->
+    <button class="nav-mood-btn" id="open-mood" type="button">
+      <span class="mood-dot"></span> Mood Finder
+    </button>
+  </div>
+
+  <!-- Search -->
+  <form id="nav-search-form" class="nav-search" action="{{ url_for('search') }}" method="GET">
+    <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;">&#9906;</button>
+    <input type="text" name="q" placeholder="Search movies, directors…" value="{{ request.args.get('q','') }}"/>
+  </form>
+
+  <!-- Chatbot toggle -->
+  <button class="nav-chat-btn" id="toggle-chat" title="CineBot Assistant" type="button">&#9889;</button>
+
+  <div class="nav-right">
+    {% if session.user_id %}
+      <div class="nav-avatar" title="{{ session.username }}">{{ session.username[0].upper() }}</div>
+      <a href="{{ url_for('logout') }}" style="font-size:.82rem;color:var(--muted);padding:.4rem .8rem;border:1px solid var(--border);border-radius:7px;transition:all .2s;"
+         onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+         onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}"  class="btn-sm btn-sm-ghost">Login</a>
+      <a href="{{ url_for('signup') }}" class="btn-sm btn-sm-red">Sign Up</a>
+    {% endif %}
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<!-- ══════════════════════════════════════════════
+     MOOD OVERLAY
+══════════════════════════════════════════════ -->
+<div class="mood-overlay" id="mood-overlay">
+  <button class="mood-close" id="close-mood" type="button">&#10005;</button>
+  <div class="mood-box" id="mood-box">
+    <!-- Steps injected by JS -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     CHATBOT
+══════════════════════════════════════════════ -->
+<div class="chatbot-window" id="chatbot-window">
+  <div class="chatbot-header">
+    <div class="chat-avatar">&#9889;</div>
+    <div>
+      <div class="chat-name">CineBot</div>
+      <div class="chat-status">AI Movie Assistant</div>
+    </div>
+    <button class="close-chat" id="close-chat" type="button">&#10005;</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg bot">
+      <div class="chat-bubble">Hello! I am CineBot. Ask me for recommendations, genre picks, director info, or how our AI works.</div>
+      <div class="chat-time">Just now</div>
+    </div>
+  </div>
+  <div class="chat-suggestions" id="chat-chips">
+    <span class="chat-chip" data-msg="Recommend me something good">Recommend me</span>
+    <span class="chat-chip" data-msg="What are the top rated films?">Top Rated</span>
+    <span class="chat-chip" data-msg="I am in the mood for a thriller">Thriller mood</span>
+    <span class="chat-chip" data-msg="How does the AI recommendation work?">How AI works</span>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chat-input" placeholder="Ask about movies…" autocomplete="off"/>
+    <button class="chat-send" id="chat-send" type="button">&#10148;</button>
+  </div>
+</div>
+<button class="chatbot-fab" id="chatbot-fab" type="button" title="Chat with CineBot">
+  &#9889;<span class="fab-badge"></span>
+</button>
+
+<!-- ══════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">CinemaDB</div>
+      <p>AI-powered movie streaming and recommendation platform. Built as an academic DBMS project demonstrating SQL, triggers, and intelligent recommendations.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Discover</h5>
+      <ul>
+        <li><a href="{{ url_for('home') }}">Home</a></li>
+        <li><a href="{{ url_for('search') }}">Browse All</a></li>
+        <li><a href="{{ url_for('recommend') }}">For You</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Genres</h5>
+      <ul>
+        <li><a href="{{ url_for('search', genre='Action') }}">Action</a></li>
+        <li><a href="{{ url_for('search', genre='Drama') }}">Drama</a></li>
+        <li><a href="{{ url_for('search', genre='Sci-Fi') }}">Sci-Fi</a></li>
+        <li><a href="{{ url_for('search', genre='Thriller') }}">Thriller</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Account</h5>
+      <ul>
+        {% if session.user_id %}
+        <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        {% else %}
+        <li><a href="{{ url_for('login') }}">Login</a></li>
+        <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>IMSR-DB &mdash; DBMS Project, Spring 2026</span>
+    <span>Built with <span class="red">Flask</span>, SQLite, scikit-learn</span>
+  </div>
+</footer>
+
+<div id="toast-area"></div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

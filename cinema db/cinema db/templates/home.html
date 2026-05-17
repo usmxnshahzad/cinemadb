@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}CinemaDB — Discover Films{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg" style="background-image:url('{{ featured.poster }}')"></div>
+  <div class="hero-vignette"></div>
+  <div class="hero-content">
+    <div class="hero-kicker">Featured Film</div>
+    <h1 class="hero-title">{{ featured.title }}</h1>
+    <div class="hero-meta">
+      <span class="hero-rating">&#9733; {{ featured.rating }}</span>
+      <span class="hero-year">{{ featured.year }}</span>
+      {% for g in featured.genre.split('|') %}<span class="tag">{{ g }}</span>{% endfor %}
+    </div>
+    <p class="hero-desc">{{ featured.description }}</p>
+    <div class="hero-btns">
+      <a href="{{ url_for('movie_detail', mid=featured.id) }}" class="btn-hero btn-hero-primary">View Details</a>
+      <button class="btn-hero btn-hero-glass" data-fav="{{ featured.id }}" type="button">
+        {% if featured.id in favs %}Favourited{% else %}Add to Favourites{% endif %}
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- TRENDING -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title"><span class="accent">Trending</span> Now</h2>
+    <a href="{{ url_for('search', sort='rating') }}" class="section-cta">See all</a>
+  </div>
+  <div class="movie-row">
+    {% for m in trending %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+</section>
+
+<!-- PERSONALIZED (logged in) -->
+{% if session.user_id and recs %}
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title"><span class="accent">Picked</span> for You</h2>
+    <a href="{{ url_for('recommend') }}" class="section-cta">More picks</a>
+  </div>
+  <div class="movie-row">
+    {% for m in recs %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+</section>
+{% elif not session.user_id %}
+<section class="section">
+  <div style="background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--border2);border-radius:16px;padding:3rem;max-width:520px;margin:0 auto;text-align:center;">
+    <div style="font-family:var(--font-d);font-size:2rem;font-weight:900;margin-bottom:.6rem;">Personalised AI Picks</div>
+    <p style="color:var(--muted);margin-bottom:1.5rem;font-size:.95rem;">Sign in and favourite movies to unlock recommendations powered by content-based filtering and your watch history.</p>
+    <a href="{{ url_for('signup') }}" class="btn-hero btn-hero-primary" style="font-size:.9rem;padding:.7rem 2rem;">Join Free</a>
+  </div>
+</section>
+{% endif %}
+
+<!-- TOP RATED -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title"><span class="gold">Top</span> Rated</h2>
+    <a href="{{ url_for('search', sort='rating', min_rating='8') }}" class="section-cta">See all</a>
+  </div>
+  <div class="movie-row">
+    {% for m in top_rated %}{% include "_movie_card.html" %}{% endfor %}
+  </div>
+</section>
+
+<!-- GENRES -->
+<section class="section">
+  <div class="section-hd">
+    <h2 class="section-title">Browse by Genre</h2>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:.65rem;">
+    {% for g in genres %}
+    <a href="{{ url_for('search', genre=g) }}"
+       style="background:var(--card);border:1px solid var(--border2);padding:.45rem 1.1rem;border-radius:20px;font-size:.85rem;font-weight:500;transition:all .2s;"
+       onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+       onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text)'">{{ g }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}
